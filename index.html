@@ -206,13 +206,22 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
-    <header class="bg-indigo-700 text-white p-4 shadow-md text-center">
-        <h1 class="text-2xl md:text-4xl tracking-wide">
-            <i class="fas fa-award mr-2"></i> Panjat Pinang Kokurikuler
-        </h1>
-        <p class="text-xs md:text-base mt-1 text-indigo-100 font-medium">
-            Kelas X SMAN 10 Pandeglang — Keamanan Psikologis, Kejujuran & Teks Persuasif
-        </p>
+    <header class="bg-indigo-700 text-white p-4 shadow-md relative">
+        <div class="container mx-auto flex justify-between items-center max-w-4xl">
+            <div class="w-10"></div>
+            <div class="text-center">
+                <h1 class="text-2xl md:text-4xl tracking-wide">
+                    <i class="fas fa-award mr-2"></i> Panjat Pinang Kokurikuler
+                </h1>
+                <p class="text-xs md:text-base mt-1 text-indigo-100 font-medium">
+                    Kelas X SMAN 10 Pandeglang — Keamanan Psikologis, Kejujuran & Teks Persuasif
+                </p>
+            </div>
+            <!-- Tombol Kontrol Suara -->
+            <button id="sound-toggle" title="Matikan/Nyalakan Suara" class="bg-indigo-600 hover:bg-indigo-500 text-white w-10 h-10 rounded-full flex items-center justify-center shadow transition">
+                <i id="sound-icon" class="fas fa-volume-up"></i>
+            </button>
+        </div>
     </header>
 
     <main class="flex-grow container mx-auto px-4 py-6 max-w-4xl flex flex-col md:flex-row gap-6 items-start">
@@ -331,9 +340,110 @@
     <canvas id="celebration-canvas" class="celebration"></canvas>
 
     <script>
-        // 15 Soal Kokurikuler Kelas X SMAN 10 Pandeglang
-        // Materi: Keamanan Psikologis, Pentingnya Kejujuran, dan Teks Persuasif
-        // Urutan: Mudah (1-4), Sedang (5-8), Sulit (9-12), HOTS (13-15)
+        // ==========================================
+        // SISTEM EFEK SUARA (WEB AUDIO API)
+        // ==========================================
+        let audioCtx = null;
+        let isMuted = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(freq, type, duration, startTime = 0, vol = 0.2) {
+            if (isMuted) return;
+            initAudio();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + startTime);
+
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime + startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + startTime + duration);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(audioCtx.currentTime + startTime);
+            osc.stop(audioCtx.currentTime + startTime + duration);
+        }
+
+        const SoundFX = {
+            click: () => {
+                playTone(500, 'sine', 0.08, 0, 0.15);
+            },
+            correct: () => {
+                playTone(523.25, 'triangle', 0.12, 0, 0.25);    // C5
+                playTone(659.25, 'triangle', 0.12, 0.08, 0.25); // E5
+                playTone(783.99, 'triangle', 0.18, 0.16, 0.25); // G5
+                playTone(1046.50, 'sine', 0.25, 0.24, 0.2);     // C6
+            },
+            wrong: () => {
+                if (isMuted) return;
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(110, audioCtx.currentTime + 0.45);
+
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.45);
+            },
+            tick: () => {
+                playTone(880, 'sine', 0.05, 0, 0.1);
+            },
+            win: () => {
+                const notes = [
+                    { f: 523.25, t: 0, d: 0.15 },    // C5
+                    { f: 659.25, t: 0.15, d: 0.15 }, // E5
+                    { f: 783.99, t: 0.30, d: 0.15 }, // G5
+                    { f: 1046.50, t: 0.45, d: 0.35 },// C6
+                    { f: 783.99, t: 0.82, d: 0.15 }, // G5
+                    { f: 1046.50, t: 1.0, d: 0.6 }   // C6
+                ];
+                notes.forEach(n => playTone(n.f, 'triangle', n.d, n.t, 0.3));
+            },
+            lose: () => {
+                const notes = [
+                    { f: 392.00, t: 0, d: 0.25 },    // G4
+                    { f: 369.99, t: 0.25, d: 0.25 }, // F#4
+                    { f: 349.23, t: 0.50, d: 0.25 }, // F4
+                    { f: 329.63, t: 0.75, d: 0.5 }   // E4
+                ];
+                notes.forEach(n => playTone(n.f, 'sawtooth', n.d, n.t, 0.18));
+            }
+        };
+
+        // Kontrol Mute/Unmute
+        const elSoundToggle = document.getElementById('sound-toggle');
+        const elSoundIcon = document.getElementById('sound-icon');
+        elSoundToggle.addEventListener('click', () => {
+            isMuted = !isMuted;
+            if (isMuted) {
+                elSoundIcon.className = 'fas fa-volume-mute text-red-300';
+            } else {
+                elSoundIcon.className = 'fas fa-volume-up';
+                SoundFX.click();
+            }
+        });
+
+        // ==========================================
+        // DATA SOAL KOKURIKULER (15 SOAL)
+        // ==========================================
         const kokurikulerQuestions = [
             // --- TINGKAT MUDAH (1-4) ---
             {
@@ -556,8 +666,14 @@
         const canvas = document.getElementById('celebration-canvas');
 
         // Inisialisasi Event Listener
-        elStartBtn.addEventListener('click', startGame);
-        elRestartBtn.addEventListener('click', resetGame);
+        elStartBtn.addEventListener('click', () => {
+            SoundFX.click();
+            startGame();
+        });
+        elRestartBtn.addEventListener('click', () => {
+            SoundFX.click();
+            resetGame();
+        });
 
         function startGame() {
             elStartScreen.classList.add('hidden');
@@ -595,12 +711,15 @@
             if (winner === 'player') {
                 score = 100;
                 updateScore();
+                SoundFX.win();
                 
                 elResultTitle.textContent = "JUARA! 🏆";
                 elResultTitle.className = "game-font text-4xl mb-2 text-green-600";
                 elResultMessage.textContent = "Hebat! Kamu berhasil mencapai puncak mendahului Bot dan meraih nilai sempurna 100!";
                 triggerConfetti();
             } else {
+                SoundFX.lose();
+                
                 elResultTitle.textContent = "Yahh, Kalah! 🥀";
                 elResultTitle.className = "game-font text-4xl mb-2 text-red-600";
                 elResultMessage.textContent = "Bot mencapai puncak lebih dulu. Ayo pelajari kembali materi Kokurikuler dan coba lagi!";
@@ -661,8 +780,9 @@
                 timeLeft--;
                 elTimerDisplay.textContent = timeLeft;
 
-                if (timeLeft <= 5) {
+                if (timeLeft <= 5 && timeLeft > 0) {
                     elTimerDisplay.className = "game-font text-2xl text-red-500 animate-pulse";
+                    SoundFX.tick();
                 }
 
                 if (timeLeft <= 0) {
@@ -685,12 +805,14 @@
             if (isCorrect) {
                 buttonElement.classList.add('correct-answer');
                 showFeedback("Benar! Naik terus!", "text-green-600");
+                SoundFX.correct();
                 score += 10;
                 movePlayer(CLIMB_STEP_CORRECT);
             } else {
                 buttonElement.classList.add('wrong-answer');
                 buttons[currentQ.answer].classList.add('correct-answer');
                 showFeedback("Kurang tepat! Hati-hati merosot...", "text-red-500");
+                SoundFX.wrong();
                 movePlayer(CLIMB_STEP_WRONG);
             }
 
@@ -714,6 +836,7 @@
             buttons[currentQ.answer].classList.add('correct-answer');
 
             showFeedback("Waktu Habis! Merosot turun...", "text-yellow-600");
+            SoundFX.wrong();
             movePlayer(CLIMB_STEP_WRONG); 
 
             setTimeout(() => {
@@ -844,7 +967,6 @@
             cancelAnimationFrame(animationId);
             animateConfetti();
         }
-
     </script>
 </body>
 </html>
