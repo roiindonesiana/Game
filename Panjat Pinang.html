@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panjat Pinang Kokurikuler - SMAN 10 Pandeglang</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 100%);
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        h1, h2, .game-font {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        /* Area Game Utama */
+        #game-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            border-bottom: 20px solid #8B4513; 
+            overflow: hidden;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path fill="%23fff" fill-opacity="0.5" d="M0 50 Q 25 30 50 50 T 100 50 V 100 H 0 Z"/></svg>') bottom/100% 30% no-repeat, linear-gradient(180deg, #4FC3F7 0%, #B3E5FC 100%);
+        }
+
+        /* Tiang Pinang */
+        .pole {
+            position: absolute;
+            bottom: 0;
+            width: 40px;
+            height: 350px;
+            background: linear-gradient(90deg, #A0522D 0%, #D2691E 50%, #8B4513 100%);
+            border-radius: 5px 5px 0 0;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: inset -5px 0 10px rgba(0,0,0,0.3);
+        }
+
+        /* Roda Hadiah di Puncak */
+        .prizes {
+            position: absolute;
+            top: 50px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 30px;
+            background: #e74c3c;
+            border-radius: 15px;
+            border: 3px solid #c0392b;
+            z-index: 10;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .prizes::before { 
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            width: 20px;
+            height: 15px;
+            background: linear-gradient(to bottom, red 50%, white 50%);
+            border: 1px solid #ccc;
+        }
+        .prizes::after { 
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            width: 2px;
+            height: 30px;
+            background: #fff;
+        }
+
+        .prize-item {
+            font-size: 1.2rem;
+            animation: dangle 2s infinite ease-in-out alternate;
+        }
+
+        @keyframes dangle {
+            0% { transform: translateY(0) rotate(-5deg); }
+            100% { transform: translateY(5px) rotate(5deg); }
+        }
+
+        /* Karakter Pemain */
+        .climber {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            bottom: 0;
+            transition: bottom 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); 
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #player {
+            left: calc(50% - 45px); 
+        }
+
+        #bot {
+            left: calc(50% - 5px); 
+            filter: hue-rotate(120deg); 
+        }
+
+        .climber-svg {
+            width: 100%;
+            height: 100%;
+            animation: climbAnim 0.5s infinite alternate paused;
+        }
+
+        .climbing .climber-svg {
+            animation-play-state: running;
+        }
+
+        @keyframes climbAnim {
+            0% { transform: translateY(0) rotate(-5deg); }
+            100% { transform: translateY(-5px) rotate(5deg); }
+        }
+
+        .climber-name {
+            font-size: 0.7rem;
+            font-weight: bold;
+            background: rgba(255,255,255,0.8);
+            padding: 2px 5px;
+            border-radius: 10px;
+            position: absolute;
+            bottom: -20px;
+            white-space: nowrap;
+        }
+
+        /* Area Pertanyaan */
+        #quiz-container {
+            transition: all 0.3s ease;
+        }
+
+        .option-btn {
+            transition: all 0.2s ease;
+            transform: scale(1);
+        }
+
+        .option-btn:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .option-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .correct-answer {
+            background-color: #22c55e !important; 
+            color: white !important;
+            border-color: #16a34a !important;
+        }
+
+        .wrong-answer {
+            background-color: #ef4444 !important; 
+            color: white !important;
+            border-color: #dc2626 !important;
+        }
+
+        /* Modal Overlay */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .celebration {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 90;
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <header class="bg-indigo-700 text-white p-4 shadow-md text-center">
+        <h1 class="text-2xl md:text-4xl tracking-wide">
+            <i class="fas fa-award mr-2"></i> Panjat Pinang Kokurikuler
+        </h1>
+        <p class="text-xs md:text-base mt-1 text-indigo-100 font-medium">
+            Kelas X SMAN 10 Pandeglang — Keamanan Psikologis, Kejujuran & Teks Persuasif
+        </p>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-6 max-w-4xl flex flex-col md:flex-row gap-6 items-start">
+        
+        <section class="w-full md:w-1/2 flex flex-col items-center">
+            <div id="game-container" class="relative bg-white border-4 border-gray-200">
+                <div class="pole"></div>
+                
+                <div class="prizes">
+                    <span class="prize-item" style="animation-delay: 0s;">🎒</span>
+                    <span class="prize-item" style="animation-delay: 0.5s;">🚲</span>
+                    <span class="prize-item" style="animation-delay: 1s;">🏆</span>
+                </div>
+
+                <!-- Pemain -->
+                <div id="player" class="climber">
+                    <svg class="climber-svg" viewBox="0 0 100 100">
+                        <circle cx="50" cy="30" r="15" fill="#fca5a5" />
+                        <rect x="40" y="45" width="20" height="30" fill="#3b82f6" rx="5" />
+                        <path d="M 40 50 L 20 30" stroke="#fca5a5" stroke-width="8" stroke-linecap="round" />
+                        <path d="M 60 50 L 80 30" stroke="#fca5a5" stroke-width="8" stroke-linecap="round" />
+                        <path d="M 45 75 L 35 95" stroke="#1e40af" stroke-width="8" stroke-linecap="round" />
+                        <path d="M 55 75 L 65 95" stroke="#1e40af" stroke-width="8" stroke-linecap="round" />
+                    </svg>
+                    <span class="climber-name text-blue-600">Siswa X</span>
+                </div>
+
+                <!-- Komputer (Bot) -->
+                <div id="bot" class="climber">
+                    <svg class="climber-svg" viewBox="0 0 100 100">
+                        <circle cx="50" cy="30" r="15" fill="#fca5a5" />
+                        <rect x="40" y="45" width="20" height="30" fill="#ef4444" rx="5" />
+                        <path d="M 40 50 L 20 30" stroke="#fca5a5" stroke-width="8" stroke-linecap="round" />
+                        <path d="M 60 50 L 80 30" stroke="#fca5a5" stroke-width="8" stroke-linecap="round" />
+                        <path d="M 45 75 L 35 95" stroke="#991b1b" stroke-width="8" stroke-linecap="round" />
+                        <path d="M 55 75 L 65 95" stroke="#991b1b" stroke-width="8" stroke-linecap="round" />
+                    </svg>
+                    <span class="climber-name text-red-600">Bot</span>
+                </div>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="w-full max-w-[600px] mt-4 flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-gray-200">
+                <div class="text-center">
+                    <span class="block text-xs text-gray-500 uppercase font-bold">Skor Kamu</span>
+                    <span id="score-display" class="game-font text-2xl text-blue-600">0</span>
+                </div>
+                <div class="text-center">
+                    <span class="block text-xs text-gray-500 uppercase font-bold">Waktu Soal</span>
+                    <span id="timer-display" class="game-font text-2xl text-yellow-500">20</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="w-full md:w-1/2 flex flex-col h-full justify-center">
+            
+            <!-- Layar Mulai -->
+            <div id="start-screen" class="bg-white p-8 rounded-xl shadow-lg border-2 border-indigo-100 text-center flex-grow flex flex-col justify-center">
+                <h2 class="text-2xl text-gray-800 mb-3">Siap Memanjat?</h2>
+                <p class="text-gray-600 mb-6 text-sm md:text-base">
+                    Uji pemahamanmu dalam kegiatan <strong>Kokurikuler Kelas X SMAN 10 Pandeglang</strong>! Tersedia <strong>15 soal</strong> berjenjang dari Mudah, Sedang, Sulit, hingga HOTS. Capai puncak mendahului Bot untuk meraih nilai sempurna <strong>100</strong>!
+                </p>
+                <button id="start-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-full shadow-lg transition transform hover:scale-105 active:scale-95 text-xl">
+                    <i class="fas fa-play mr-2"></i> Mulai Game
+                </button>
+            </div>
+
+            <!-- Area Kuis (Sembunyi awal) -->
+            <div id="quiz-container" class="hidden bg-white p-6 rounded-xl shadow-lg border-2 border-blue-100 flex-grow flex flex-col">
+                <div class="mb-4 flex justify-between items-center">
+                    <span class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-indigo-400">Pertanyaan <span id="q-number">1</span>/15</span>
+                    <span id="level-badge" class="bg-green-100 text-green-800 text-xs font-bold px-2.5 py-0.5 rounded">MUDAH</span>
+                </div>
+                <h3 id="question-text" class="text-base md:text-lg font-semibold text-gray-800 mb-5 flex-grow">
+                    Pertanyaan akan muncul di sini...
+                </h3>
+                
+                <div id="options-container" class="grid grid-cols-1 gap-2.5">
+                    <!-- Tombol Opsi akan di-generate oleh JS -->
+                </div>
+                
+                <div id="feedback-message" class="mt-4 text-center font-bold h-6 transition-opacity duration-300 opacity-0">
+                    <!-- Pesan Benar/Salah -->
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Footer Atribusi Pembuat -->
+    <footer class="w-full bg-white border-t border-gray-200 py-4 text-center shadow-inner mt-4">
+        <p class="text-sm md:text-base font-semibold text-gray-700 tracking-wide">
+            Dibuat Oleh : <span class="text-indigo-700 font-bold">Roi Puguh Miftachul Rochman</span>
+        </p>
+    </footer>
+
+    <div id="result-modal" class="modal">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 text-center transform transition-all">
+            <h2 id="result-title" class="game-font text-4xl mb-2"></h2>
+            <p id="result-message" class="text-gray-600 mb-6 text-base"></p>
+            
+            <div class="flex justify-center space-x-4 mb-6">
+                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 w-1/2">
+                    <span class="block text-sm text-gray-500">Skor Akhir</span>
+                    <span id="final-score" class="game-font text-3xl text-blue-600">0</span>
+                </div>
+            </div>
+
+            <button id="restart-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition transform hover:scale-105">
+                <i class="fas fa-redo mr-2"></i> Main Lagi
+            </button>
+        </div>
+    </div>
+
+    <!-- Container untuk efek confetti/kembang api -->
+    <canvas id="celebration-canvas" class="celebration"></canvas>
+
+    <script>
+        // 15 Soal Kokurikuler Kelas X SMAN 10 Pandeglang
+        // Materi: Keamanan Psikologis, Pentingnya Kejujuran, dan Teks Persuasif
+        // Urutan: Mudah (1-4), Sedang (5-8), Sulit (9-12), HOTS (13-15)
+        const kokurikulerQuestions = [
+            // --- TINGKAT MUDAH (1-4) ---
+            {
+                level: "MUDAH",
+                question: "Apa yang dimaksud dengan keamanan psikologis (psychological safety) di lingkungan sekolah?",
+                options: [
+                    "Perasaan aman untuk berpendapat, bertanya, dan mengakui kesalahan tanpa takut dipermalukan",
+                    "Keamanan fisik gedung sekolah dari gangguan luar dan bencana alam",
+                    "Kebebasan siswa untuk melanggar tata tertib tanpa dikenai sanksi",
+                    "Kondisi di mana semua siswa selalu mendapatkan nilai yang sama"
+                ],
+                answer: 0
+            },
+            {
+                level: "MUDAH",
+                question: "Contoh perilaku yang mencerminkan nilai kejujuran saat melaksanakan asesmen atau ulangan di kelas adalah...",
+                options: [
+                    "Bekerja sama dengan teman sebangku agar cepat selesai",
+                    "Mengerjakan soal berdasarkan kemampuan diri sendiri tanpa menyontek",
+                    "Membuka catatan secara diam-diam saat guru tidak melihat",
+                    "Menyalin pekerjaan teman lalu mengubah sedikit susunan kalimatnya"
+                ],
+                answer: 1
+            },
+            {
+                level: "MUDAH",
+                question: "Tujuan utama dari sebuah teks persuasif adalah...",
+                options: [
+                    "Menceritakan urutan peristiwa sejarah secara kronologis",
+                    "Menggambarkan ciri fisik suatu objek secara rinci",
+                    "Membujuk, mengajak, atau memengaruhi pembaca agar melakukan sesuatu",
+                    "Menjelaskan langkah-langkah membuat kerajinan tangan"
+                ],
+                answer: 2
+            },
+            {
+                level: "MUDAH",
+                question: "Manakah di bawah ini yang merupakan kata-kata ajakan yang sering digunakan dalam teks persuasif?",
+                options: [
+                    "Kemarin, besok, lusa",
+                    "Marilah, ayo, hendaknya",
+                    "Tetapi, melainkan, sedangkan",
+                    "Adalah, merupakan, yaitu"
+                ],
+                answer: 1
+            },
+
+            // --- TINGKAT SEDANG (5-8) ---
+            {
+                level: "SEDANG",
+                question: "Ketika seorang teman di kelas menyampaikan ide yang kurang tepat saat diskusi kelompok, sikap yang mendukung keamanan psikologis adalah...",
+                options: [
+                    "Menertawakannya bersama teman-teman agar suasana mencair",
+                    "Langsung memotong pembicaraannya dan menyalahkannya di depan kelas",
+                    "Menghargai keberaniannya berpendapat lalu memberikan masukan dengan santun",
+                    "Mengabaikan pendapatnya dan tidak mengajaknya berdiskusi lagi"
+                ],
+                answer: 2
+            },
+            {
+                level: "SEDANG",
+                question: "Mengapa kejujuran menjadi fondasi utama dalam membangun kepercayaan (trust) antarwarga sekolah?",
+                options: [
+                    "Karena orang jujur tidak akan pernah melakukan kesalahan apa pun",
+                    "Karena konsistensi antara perkataan dan perbuatan membuat orang lain merasa aman dan yakin",
+                    "Karena kejujuran hanya diperlukan saat berhadapan dengan guru dan kepala sekolah",
+                    "Karena jujur membuat seseorang selalu terhindar dari tanggung jawab"
+                ],
+                answer: 1
+            },
+            {
+                level: "SEDANG",
+                question: "Bagian struktur teks persuasif yang berisi paparan pendapat penulis disertai fakta dan data untuk memperkuat ajakan disebut...",
+                options: [
+                    "Pengenalan isu",
+                    "Rangkaian argumen",
+                    "Pernyataan ajakan",
+                    "Penegasan kembali"
+                ],
+                answer: 1
+            },
+            {
+                level: "SEDANG",
+                question: "Perhatikan kutipan berikut: 'Kejujuran adalah mata uang yang berlaku di mana saja. Oleh karena itu, mari kita biasakan bersikap jujur mulai dari hal kecil di kelas!' Kutipan tersebut termasuk bagian...",
+                options: [
+                    "Pengenalan isu",
+                    "Rangkaian argumen",
+                    "Pernyataan ajakan",
+                    "Orientasi masalah"
+                ],
+                answer: 2
+            },
+
+            // --- TINGKAT SULIT (9-12) ---
+            {
+                level: "SULIT",
+                question: "Bagaimana hubungan timbal balik antara keamanan psikologis di kelas dengan budaya kejujuran akademik siswa?",
+                options: [
+                    "Keamanan psikologis membuat siswa takut mengakui ketidakpahaman sehingga memilih menyontek",
+                    "Saat siswa merasa aman mengakui ketidaktahuan tanpa dihakimi, dorongan untuk berbuat curang berkurang",
+                    "Budaya kejujuran hanya dapat tumbuh jika guru menerapkan hukuman yang sangat keras",
+                    "Keamanan psikologis dan kejujuran merupakan dua hal yang saling bertentangan di kelas"
+                ],
+                answer: 1
+            },
+            {
+                level: "SULIT",
+                question: "Dalam menyusun teks persuasif bertema anti-perundungan (anti-bullying) di sekolah, fungsi pencantuman data hasil survei kesehatan mental remaja adalah...",
+                options: [
+                    "Membuat panjang paragraf agar memenuhi jumlah kata minimal",
+                    "Menakut-nakuti pembaca agar tidak berani bergaul di sekolah",
+                    "Memberikan landasan logis dan empiris sehingga ajakan lebih dipercaya pembaca",
+                    "Menggantikan posisi kalimat ajakan di akhir paragraf"
+                ],
+                answer: 2
+            },
+            {
+                level: "SULIT",
+                question: "Seorang ketua kelompok menyadari bahwa laporan proyek kokurikuler kelompoknya mengalami keterlambatan karena kesalahan pembagian tugas. Tindakan yang menunjukkan integritas sekaligus menjaga keamanan psikologis tim adalah...",
+                options: [
+                    "Menyalahkan anggota kelompok yang paling pendiam di hadapan guru",
+                    "Mengakui kendala tersebut secara jujur kepada guru dan mengajak tim mengevaluasi solusi bersama",
+                    "Memalsukan tanggal pengumpulan laporan agar terlihat tepat waktu",
+                    "Diam saja dan berharap guru tidak memeriksa waktu pengumpulan tugas"
+                ],
+                answer: 1
+            },
+            {
+                level: "SULIT",
+                question: "Cermati kalimat persuasif berikut: 'Jangan biarkan rasa takut salah membungkam suaramu; setiap gagasanmu berharga untuk kemajuan kelas kita!' Teknik persuasi yang dominan digunakan dalam kalimat tersebut adalah...",
+                options: [
+                    "Pendekatan emosional dan penguatan empati",
+                    "Ancaman sanksi administratif sekolah",
+                    "Pembandingan data statistik antar kelas",
+                    "Penjelasan definisi istilah psikologi secara teknis"
+                ],
+                answer: 0
+            },
+
+            // --- TINGKAT HOTS (13-15) ---
+            {
+                level: "HOTS",
+                question: "(HOTS) Di sebuah kelas X, banyak siswa memilih diam saat sesi tanya jawab meskipun belum memahami materi karena khawatir dicap 'lamban' oleh teman-temannya. Akibatnya, saat ujian berlangsung, tingkat menyontek meningkat tajam. Analisis akar masalah dan solusi paling tepat untuk kasus ini adalah...",
+                options: [
+                    "Akar masalahnya adalah soal ujian terlalu sulit; solusinya adalah menurunkan standar ketuntasan",
+                    "Akar masalahnya adalah rendahnya keamanan psikologis di kelas; solusinya membangun norma saling menghargai proses belajar dan refleksi jujur",
+                    "Akar masalahnya adalah siswa kurang menghafal buku; solusinya menambah jam pelajaran tambahan setiap hari",
+                    "Akar masalahnya adalah pengawasan ujian kurang ketat; solusinya memasang kamera pengawas di setiap sudut kelas"
+                ],
+                answer: 1
+            },
+            {
+                level: "HOTS",
+                question: "(HOTS) Kamu diminta membuat kampanye poster persuasif untuk meningkatkan budaya kejujuran di kantin kejujuran SMAN 10 Pandeglang. Manakah rancangan pesan persuasif yang paling efektif secara psikologis dan kebahasaan?",
+                options: [
+                    "'Awas! Kamera Mengintai Anda! Jangan Mencuri di Kantin Ini!'",
+                    "'Kantin ini milik bersama. Jika rugi, kantin akan ditutup selamanya.'",
+                    "'Integritasmu adalah kebanggaanmu. Mari wujudkan SMAN 10 Pandeglang yang bermartabat dengan membayar sesuai yang kamu ambil!'",
+                    "'Kejujuran merupakan perilaku terpuji yang diatur dalam norma sosial dan agama di masyarakat.'"
+                ],
+                answer: 2
+            },
+            {
+                level: "HOTS",
+                question: "(HOTS) Dalam proyek kolaborasi kokurikuler, Rina menemukan bahwa data observasi yang dikumpulkan rekan satu kelompoknya ternyata hasil rekayasa (tidak jujur). Jika Rina ingin menegur rekannya tanpa merusak keamanan psikologis dan hubungan pertemanan mereka, langkah komunikasi persuasif terbaik yang harus dilakukan Rina adalah...",
+                options: [
+                    "Mengunggah temuan kecurangan tersebut ke grup media sosial kelas agar menjadi pelajaran bagi semua",
+                    "Mengajak rekannya berbicara empat mata dengan bahasa empatik, menjelaskan dampak ketidakakuratan data terhadap proyek, dan mengajak mengambil ulang data bersama",
+                    "Diam-diam mengganti seluruh data milik rekannya tanpa memberitahu agar tidak terjadi konflik",
+                    "Langsung melaporkan rekannya ke wali kelas dan meminta rekannya dikeluarkan dari kelompok"
+                ],
+                answer: 1
+            }
+        ];
+
+        // Variabel Game
+        let currentQuestions = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        
+        let playerProgress = 0;
+        let botProgress = 0;
+        
+        // Konstanta Game (Disesuaikan untuk 15 soal)
+        const WIN_PROGRESS = 100;
+        const CLIMB_STEP_CORRECT = 10; // 10 jawaban benar langsung mencapai puncak (100%)
+        const CLIMB_STEP_WRONG = -5;   // Turun 5% jika salah
+        const BOT_SPEED_MS = 1600;     // Bot bergerak setiap 1.6 detik
+        const BOT_STEP_MIN = 1;        // Bot naik minimal 1%
+        const BOT_STEP_MAX = 4;        // Bot naik maksimal 4%
+        const TIME_PER_QUESTION = 20;  // 20 detik per soal
+
+        let botInterval;
+        let questionTimer;
+        let timeLeft = TIME_PER_QUESTION;
+        let isGameActive = false;
+
+        // Elemen DOM
+        const elStartScreen = document.getElementById('start-screen');
+        const elQuizContainer = document.getElementById('quiz-container');
+        const elStartBtn = document.getElementById('start-btn');
+        
+        const elQuestionText = document.getElementById('question-text');
+        const elOptionsContainer = document.getElementById('options-container');
+        const elQNumber = document.getElementById('q-number');
+        const elLevelBadge = document.getElementById('level-badge');
+        const elScoreDisplay = document.getElementById('score-display');
+        const elTimerDisplay = document.getElementById('timer-display');
+        const elFeedbackMessage = document.getElementById('feedback-message');
+
+        const elPlayer = document.getElementById('player');
+        const elBot = document.getElementById('bot');
+        const elPole = document.querySelector('.pole');
+
+        const elModal = document.getElementById('result-modal');
+        const elResultTitle = document.getElementById('result-title');
+        const elResultMessage = document.getElementById('result-message');
+        const elFinalScore = document.getElementById('final-score');
+        const elRestartBtn = document.getElementById('restart-btn');
+        const canvas = document.getElementById('celebration-canvas');
+
+        // Inisialisasi Event Listener
+        elStartBtn.addEventListener('click', startGame);
+        elRestartBtn.addEventListener('click', resetGame);
+
+        function startGame() {
+            elStartScreen.classList.add('hidden');
+            elQuizContainer.classList.remove('hidden');
+            elQuizContainer.classList.add('flex');
+            
+            // Soal berurutan dari Mudah -> Sedang -> Sulit -> HOTS
+            currentQuestions = [...kokurikulerQuestions]; 
+            currentQuestionIndex = 0;
+            score = 0;
+            playerProgress = 0;
+            botProgress = 0;
+            isGameActive = true;
+            
+            updateScore();
+            updatePositions();
+            loadQuestion();
+            
+            startBot();
+        }
+
+        function resetGame() {
+            elModal.classList.remove('active');
+            stopBot();
+            clearInterval(questionTimer);
+            canvas.style.display = 'none'; 
+            startGame();
+        }
+
+        function endGame(winner) {
+            isGameActive = false;
+            stopBot();
+            clearInterval(questionTimer);
+
+            if (winner === 'player') {
+                score = 100;
+                updateScore();
+                
+                elResultTitle.textContent = "JUARA! 🏆";
+                elResultTitle.className = "game-font text-4xl mb-2 text-green-600";
+                elResultMessage.textContent = "Hebat! Kamu berhasil mencapai puncak mendahului Bot dan meraih nilai sempurna 100!";
+                triggerConfetti();
+            } else {
+                elResultTitle.textContent = "Yahh, Kalah! 🥀";
+                elResultTitle.className = "game-font text-4xl mb-2 text-red-600";
+                elResultMessage.textContent = "Bot mencapai puncak lebih dulu. Ayo pelajari kembali materi Kokurikuler dan coba lagi!";
+            }
+            
+            elModal.classList.add('active');
+            elFinalScore.textContent = score;
+        }
+
+        function updateLevelBadge(level) {
+            elLevelBadge.textContent = level;
+            if (level === "MUDAH") {
+                elLevelBadge.className = "bg-green-100 text-green-800 text-xs font-bold px-2.5 py-0.5 rounded border border-green-300";
+            } else if (level === "SEDANG") {
+                elLevelBadge.className = "bg-yellow-100 text-yellow-800 text-xs font-bold px-2.5 py-0.5 rounded border border-yellow-300";
+            } else if (level === "SULIT") {
+                elLevelBadge.className = "bg-orange-100 text-orange-800 text-xs font-bold px-2.5 py-0.5 rounded border border-orange-300";
+            } else {
+                elLevelBadge.className = "bg-red-100 text-red-800 text-xs font-bold px-2.5 py-0.5 rounded border border-red-300";
+            }
+        }
+
+        function loadQuestion() {
+            if (!isGameActive) return;
+
+            if (currentQuestionIndex >= currentQuestions.length) {
+                 currentQuestions = [...kokurikulerQuestions];
+                 currentQuestionIndex = 0;
+            }
+
+            const currentQ = currentQuestions[currentQuestionIndex];
+            
+            elQNumber.textContent = currentQuestionIndex + 1;
+            updateLevelBadge(currentQ.level);
+            elQuestionText.textContent = currentQ.question;
+            
+            elOptionsContainer.innerHTML = '';
+            
+            currentQ.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'option-btn w-full text-left bg-gray-50 hover:bg-indigo-50 border-2 border-gray-200 hover:border-indigo-300 text-gray-700 text-sm md:text-base font-medium py-2.5 px-4 rounded-xl shadow-sm focus:outline-none';
+                button.textContent = option;
+                button.onclick = () => handleAnswer(index, button);
+                elOptionsContainer.appendChild(button);
+            });
+
+            elFeedbackMessage.style.opacity = '0';
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(questionTimer);
+            timeLeft = TIME_PER_QUESTION;
+            elTimerDisplay.textContent = timeLeft;
+            elTimerDisplay.className = "game-font text-2xl text-yellow-500";
+
+            questionTimer = setInterval(() => {
+                timeLeft--;
+                elTimerDisplay.textContent = timeLeft;
+
+                if (timeLeft <= 5) {
+                    elTimerDisplay.className = "game-font text-2xl text-red-500 animate-pulse";
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(questionTimer);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function handleAnswer(selectedIndex, buttonElement) {
+            if (!isGameActive) return;
+            clearInterval(questionTimer);
+
+            const currentQ = currentQuestions[currentQuestionIndex];
+            const isCorrect = selectedIndex === currentQ.answer;
+
+            const buttons = elOptionsContainer.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (isCorrect) {
+                buttonElement.classList.add('correct-answer');
+                showFeedback("Benar! Naik terus!", "text-green-600");
+                score += 10;
+                movePlayer(CLIMB_STEP_CORRECT);
+            } else {
+                buttonElement.classList.add('wrong-answer');
+                buttons[currentQ.answer].classList.add('correct-answer');
+                showFeedback("Kurang tepat! Hati-hati merosot...", "text-red-500");
+                movePlayer(CLIMB_STEP_WRONG);
+            }
+
+            updateScore();
+            
+            setTimeout(() => {
+                if(isGameActive) {
+                    currentQuestionIndex++;
+                    loadQuestion();
+                }
+            }, 2000); 
+        }
+
+        function handleTimeOut() {
+            if (!isGameActive) return;
+            
+            const buttons = elOptionsContainer.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            const currentQ = currentQuestions[currentQuestionIndex];
+            buttons[currentQ.answer].classList.add('correct-answer');
+
+            showFeedback("Waktu Habis! Merosot turun...", "text-yellow-600");
+            movePlayer(CLIMB_STEP_WRONG); 
+
+            setTimeout(() => {
+                if(isGameActive) {
+                    currentQuestionIndex++;
+                    loadQuestion();
+                }
+            }, 2000);
+        }
+
+        function showFeedback(text, colorClass) {
+            elFeedbackMessage.textContent = text;
+            elFeedbackMessage.className = `mt-4 text-center font-bold h-6 transition-opacity duration-300 opacity-100 ${colorClass}`;
+        }
+
+        function updateScore() {
+            elScoreDisplay.textContent = score;
+        }
+
+        function movePlayer(amount) {
+            playerProgress += amount;
+            
+            if (playerProgress < 0) playerProgress = 0;
+            if (playerProgress >= WIN_PROGRESS) playerProgress = WIN_PROGRESS;
+
+            elPlayer.classList.add('climbing');
+            setTimeout(() => elPlayer.classList.remove('climbing'), 500);
+
+            updatePositions();
+
+            if (playerProgress >= WIN_PROGRESS) {
+                endGame('player');
+            }
+        }
+
+        function startBot() {
+            botInterval = setInterval(() => {
+                if (!isGameActive) return;
+
+                const botStep = Math.floor(Math.random() * (BOT_STEP_MAX - BOT_STEP_MIN + 1)) + BOT_STEP_MIN;
+                botProgress += botStep;
+
+                if (botProgress > WIN_PROGRESS) botProgress = WIN_PROGRESS;
+
+                elBot.classList.add('climbing');
+                setTimeout(() => elBot.classList.remove('climbing'), 500);
+
+                updatePositions();
+
+                if (botProgress >= WIN_PROGRESS) {
+                    endGame('bot');
+                }
+            }, BOT_SPEED_MS);
+        }
+
+        function stopBot() {
+            clearInterval(botInterval);
+        }
+
+        function updatePositions() {
+            const poleHeight = elPole.offsetHeight;
+            const climberHeight = 50; 
+            const maxBottom = poleHeight - climberHeight;
+
+            const playerBottomPx = (playerProgress / 100) * maxBottom;
+            const botBottomPx = (botProgress / 100) * maxBottom;
+
+            elPlayer.style.bottom = `${playerBottomPx}px`;
+            elBot.style.bottom = `${botBottomPx}px`;
+        }
+
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function createParticles() {
+            particles = [];
+            for (let i = 0; i < 150; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 8 + 2,
+                    speedY: Math.random() * 3 + 2,
+                    speedX: Math.random() * 2 - 1,
+                    color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 10 - 5
+                });
+            }
+        }
+
+        let animationId;
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let activeParticles = 0;
+
+            particles.forEach(p => {
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.rotation += p.rotationSpeed;
+
+                if (p.y < canvas.height) {
+                    activeParticles++;
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                    ctx.restore();
+                }
+            });
+
+            if (activeParticles > 0 && isGameActive === false) { 
+                animationId = requestAnimationFrame(animateConfetti);
+            }
+        }
+
+        function triggerConfetti() {
+            canvas.style.display = 'block';
+            createParticles();
+            cancelAnimationFrame(animationId);
+            animateConfetti();
+        }
+
+    </script>
+</body>
+</html>
